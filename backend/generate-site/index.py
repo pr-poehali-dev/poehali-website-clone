@@ -3,19 +3,20 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from typing import Dict, Any
-from groq import Groq
+import google.generativeai as genai
 
 ENERGY_COST = 20
-# Force redeploy to pick up new GROQ_API_KEY secret
+# Updated GROQ_API_KEY
 
 def generate_site_with_ai(prompt: str) -> str:
-    '''Generate HTML site using Groq AI'''
+    '''Generate HTML site using Google Gemini AI'''
     
-    groq_api_key = os.environ.get('GROQ_API_KEY')
-    if not groq_api_key:
-        raise ValueError('GROQ_API_KEY not configured')
+    api_key = os.environ.get('GEMINI_API_KEY')
+    if not api_key:
+        raise ValueError('GEMINI_API_KEY not configured')
     
-    client = Groq(api_key=groq_api_key)
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel('gemini-1.5-flash')
     
     system_prompt = '''Ты — эксперт по созданию красивых современных landing page сайтов.
 Создай ПОЛНЫЙ HTML код сайта на основе запроса пользователя.
@@ -33,17 +34,9 @@ def generate_site_with_ai(prompt: str) -> str:
 ВЕРНИ ТОЛЬКО КОД HTML, без объяснений, markdown или других текстов.
 Начни с <!DOCTYPE html> и закончи </html>'''
     
-    response = client.chat.completions.create(
-        model="mixtral-8x7b-32768",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Создай сайт: {prompt}"}
-        ],
-        temperature=0.8,
-        max_tokens=8000
-    )
-    
-    html = response.choices[0].message.content.strip()
+    full_prompt = f"{system_prompt}\n\nЗапрос пользователя: {prompt}"
+    response = model.generate_content(full_prompt)
+    html = response.text.strip()
     
     if html.startswith('```html'):
         html = html[7:]
@@ -57,7 +50,7 @@ def generate_site_with_ai(prompt: str) -> str:
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Generate website using Groq AI based on user prompt
+    Business: Generate website using Google Gemini AI based on user prompt
     Args: event - dict with httpMethod, body (user_id, prompt)
     Returns: HTTP response with generated HTML code
     '''
