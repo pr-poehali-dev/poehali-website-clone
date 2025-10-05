@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 const ADMIN_EMAIL = 'suradaniil74@gmail.com';
 const AUTH_URL = 'https://functions.poehali.dev/39c3bcf3-ff05-43e6-9752-8d71cb3f2726';
 const ADMIN_URL = 'https://functions.poehali.dev/aa011f22-c7a0-4b11-b36e-e89178ddec31';
+const GENERATE_URL = 'https://functions.poehali.dev/a4d631a0-21c0-4343-ad03-17b86f32820d';
 
 interface User {
   id: number;
@@ -24,6 +25,9 @@ const Index = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
+  const [sitePrompt, setSitePrompt] = useState('');
+  const [generatedHtml, setGeneratedHtml] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -141,6 +145,57 @@ const Index = () => {
         description: 'Не удалось подключиться к серверу',
         variant: 'destructive'
       });
+    }
+  };
+
+  const generateSite = async () => {
+    if (!sitePrompt.trim()) {
+      toast({
+        title: 'Ошибка',
+        description: 'Введите описание сайта',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+
+    try {
+      const response = await fetch(GENERATE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user?.id,
+          prompt: sitePrompt
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setGeneratedHtml(data.html);
+        const updatedUser = { ...user!, energy_balance: data.energy_remaining };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        toast({
+          title: 'Сайт создан!',
+          description: `Использовано ${data.energy_used} энергии. Осталось: ${data.energy_remaining}`
+        });
+      } else {
+        toast({
+          title: 'Ошибка',
+          description: data.error || 'Не удалось создать сайт',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось подключиться к серверу',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -272,22 +327,97 @@ const Index = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-        <section className="text-center space-y-4 py-12 animate-fade-in">
-          <h2 className="text-5xl font-bold">Добро пожаловать, {user.email}!</h2>
-          <p className="text-xl text-gray-600">
-            У вас {user.energy_balance} единиц энергии
-          </p>
+        <section className="space-y-6 animate-fade-in">
+          <div className="text-center space-y-2">
+            <h2 className="text-4xl font-bold">Создайте свой сайт за минуту</h2>
+            <p className="text-xl text-gray-600">
+              Опишите, что хотите создать — нейросеть всё сделает
+            </p>
+          </div>
+
+          <Card className="p-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="prompt">Что создаём?</Label>
+                <Textarea
+                  id="prompt"
+                  value={sitePrompt}
+                  onChange={(e) => setSitePrompt(e.target.value)}
+                  placeholder="Например: Landing для кофейни с меню и формой заказа. Современный дизайн с градиентами."
+                  className="text-lg min-h-24"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  <Icon name="Zap" className="inline text-blue-600" size={16} />
+                  {' '}Стоимость: 20 энергии за запрос
+                </div>
+                <Button
+                  onClick={generateSite}
+                  disabled={isGenerating || user.energy_balance < 20}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Icon name="Loader2" className="animate-spin mr-2" size={20} />
+                      Создаём сайт...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="Sparkles" className="mr-2" size={20} />
+                      Создать сайт
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {generatedHtml && (
+            <Card className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold flex items-center gap-2">
+                  <Icon name="Check" className="text-green-600" size={24} />
+                  Ваш сайт готов!
+                </h3>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const blob = new Blob([generatedHtml], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'site.html';
+                    a.click();
+                  }}
+                >
+                  <Icon name="Download" size={16} className="mr-2" />
+                  Скачать HTML
+                </Button>
+              </div>
+              
+              <div className="border rounded-lg overflow-hidden">
+                <iframe
+                  srcDoc={generatedHtml}
+                  className="w-full h-96 border-0"
+                  title="Generated Site Preview"
+                />
+              </div>
+            </Card>
+          )}
         </section>
 
         <section className="grid md:grid-cols-3 gap-6 animate-fade-in">
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <div className="space-y-4">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Icon name="Code" className="text-blue-600" size={24} />
+                <Icon name="Wand2" className="text-blue-600" size={24} />
               </div>
-              <h3 className="text-xl font-semibold">Создавайте проекты</h3>
+              <h3 className="text-xl font-semibold">ИИ генерация</h3>
               <p className="text-gray-600">
-                Полный доступ к конструктору сайтов
+                Мощная нейросеть создаёт сайты по вашему описанию
               </p>
             </div>
           </Card>
@@ -295,11 +425,11 @@ const Index = () => {
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <div className="space-y-4">
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Icon name="Rocket" className="text-purple-600" size={24} />
+                <Icon name="Zap" className="text-purple-600" size={24} />
               </div>
-              <h3 className="text-xl font-semibold">Публикуйте</h3>
+              <h3 className="text-xl font-semibold">Быстро и просто</h3>
               <p className="text-gray-600">
-                Размещайте проекты в интернете бесплатно
+                От идеи до готового сайта за 30 секунд
               </p>
             </div>
           </Card>
@@ -307,11 +437,11 @@ const Index = () => {
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <div className="space-y-4">
               <div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center">
-                <Icon name="Sparkles" className="text-pink-600" size={24} />
+                <Icon name="Download" className="text-pink-600" size={24} />
               </div>
-              <h3 className="text-xl font-semibold">Развивайтесь</h3>
+              <h3 className="text-xl font-semibold">Готовый код</h3>
               <p className="text-gray-600">
-                Обучайтесь и растите вместе с платформой
+                Скачивайте HTML файл и размещайте где угодно
               </p>
             </div>
           </Card>

@@ -1,0 +1,14 @@
+{
+  "tests": [
+    {
+      "name": "Check energy requirement",
+      "method": "POST",
+      "body": {
+        "user_id": 1,
+        "prompt": "Test site"
+      },
+      "expectedStatus": 200,
+      "bodyMatcher": "skip"
+    }
+  ]
+}
