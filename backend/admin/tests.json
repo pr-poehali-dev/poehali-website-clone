@@ -1,0 +1,30 @@
+{
+  "tests": [
+    {
+      "name": "Get all users as admin",
+      "method": "GET",
+      "headers": {
+        "X-Admin-Email": "suradaniil74@gmail.com"
+      },
+      "expectedStatus": 200,
+      "bodyMatcher": "skip"
+    },
+    {
+      "name": "Update user energy balance",
+      "method": "POST",
+      "headers": {
+        "X-Admin-Email": "suradaniil74@gmail.com"
+      },
+      "body": {
+        "action": "update_balance",
+        "user_id": 1,
+        "new_balance": 500
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

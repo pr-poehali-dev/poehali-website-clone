@@ -1,0 +1,32 @@
+{
+  "tests": [
+    {
+      "name": "Login existing user",
+      "method": "POST",
+      "body": {
+        "action": "login",
+        "email": "suradaniil74@gmail.com",
+        "password": "admin"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Login with wrong password",
+      "method": "POST",
+      "body": {
+        "action": "login",
+        "email": "newuser@example.com",
+        "password": "wrongpass"
+      },
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
