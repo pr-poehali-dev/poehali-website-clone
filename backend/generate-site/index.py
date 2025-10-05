@@ -6,6 +6,7 @@ from typing import Dict, Any
 from groq import Groq
 
 ENERGY_COST = 20
+# Force redeploy to pick up new GROQ_API_KEY secret
 
 def generate_site_with_ai(prompt: str) -> str:
     '''Generate HTML site using Groq AI'''
@@ -33,7 +34,7 @@ def generate_site_with_ai(prompt: str) -> str:
 Начни с <!DOCTYPE html> и закончи </html>'''
     
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="mixtral-8x7b-32768",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"Создай сайт: {prompt}"}
