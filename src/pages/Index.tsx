@@ -122,6 +122,12 @@ const Index = () => {
           description: `Новый баланс: ${newBalance} энергии`
         });
         loadUsers();
+        
+        if (user && user.id === userId) {
+          const updatedUser = { ...user, energy_balance: newBalance };
+          setUser(updatedUser);
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        }
       } else {
         toast({
           title: 'Ошибка',
@@ -345,8 +351,24 @@ const Index = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => {
+                            const amount = prompt(
+                              `Сколько энергии добавить для ${u.email}?`,
+                              '100'
+                            );
+                            if (amount !== null) {
+                              const newBalance = u.energy_balance + parseInt(amount);
+                              updateBalance(u.id, newBalance);
+                            }
+                          }}
+                        >
+                          <Icon name="Plus" size={16} />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
                             const newBalance = prompt(
-                              `Введите новый баланс для ${u.email}:`,
+                              `Установить баланс для ${u.email}:`,
                               u.energy_balance.toString()
                             );
                             if (newBalance !== null) {
